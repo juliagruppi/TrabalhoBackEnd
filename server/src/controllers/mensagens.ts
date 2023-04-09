@@ -1,73 +1,13 @@
 import express from "express";
 export const mensagens = express.Router();
-
+import * as mensagensRepository from '../repositories/mensagensRepository';
 import fs from "fs";
+import { deleteMensagens, getMensagens, postMensagem } from "../repositories/mensagensRepository";
 
-function mensagemAutomatica(mensagem: string) {
-    const retorno = JSON.parse(fs.readFileSync("./src/Json/retornosAutomaticos.json").toString());
-
-    switch (mensagem) {
-        case '1':
-            return retorno[0].primeiraEscolha
-            break;
-        case '2':
-            return retorno[0].segundaEscolha
-            break;
-        case '3':
-            return retorno[0].terceiraEscolha
-            break;
-        case '4':
-            return retorno[0].quartaEscolha
-            break;
-        default:
-            return "Opss... não entendi, poderia digitar o número da sua opção."
-            break;
-    }
-    return mensagem
-}
-
-
-function interacaoBotUsuario(mensagem: string) {
-    const historico = JSON.parse(fs.readFileSync("./src/Json/historicoConversa.json").toString());
-    const mensagemUsuario = {
-        mensagem: mensagem,
-        ehUsuario: true
-    }
-
-    historico.push(mensagemUsuario)
-
-    const mensagemBot = {
-        mensagem: mensagemAutomatica(mensagem),
-        ehUsuario: false
-    }
-
-    historico.push(mensagemBot)
-
-    const historicoString = JSON.stringify(historico)
-
-    fs.writeFile("./src/Json/historicoConversa.json", historicoString, () => {
-        console.log("Json Salvo")
-    })
-
-    return historico
-}
-
-// Código para deletar
-
-export async function deleteHistorico() {
-    const mensagensHistorico = JSON.parse(fs.readFileSync(`./src/Json/historicoConversa.json`).toString());
-
-    fs.unlink(`./src/Json/historicoConversa.json`, () => {
-        console.log("Json Deletado")
-    });
-    return mensagensHistorico
-}
-
-
-mensagens.post("/:mensagem", (req, res) => {
+mensagens.post("/:mensagem", async (req, res) => {
     const mensagemRecebida = req.params.mensagem
-
-    const historico = interacaoBotUsuario(mensagemRecebida)
+    console.log(req.body)
+    const historico = await postMensagem(mensagemRecebida, req.body.numeroProtocolo)
     res.set({
         'Content-Type': "application/json",
         'Acess-Control-Allow-Origin': '*'
@@ -80,13 +20,12 @@ mensagens.post("/:mensagem", (req, res) => {
     })
 });
 
-
 //Finaliza atendimento
-mensagens.delete("/", (req, res) => {
-    const historico = deleteHistorico();
+mensagens.delete("/", async (req, res) => {
+    const conversaAtual = await mensagensRepository.deleteMensagens();
     res.status(200);
     res.json({
         status: 'Success',
-        data: historico
+        data: conversaAtual
     })
 });

@@ -1,18 +1,12 @@
 import express from "express";
-import fs from 'fs'
+import fs from 'fs';
+import * as mensagensRepository from '../repositories/mensagensRepository';
 export const iniciarBot = express.Router()
 
 // Ler a mensagem inicial do bot
 
-iniciarBot.get("/",(req, res) => {
-    fs.writeFile("./src/Json/historicoConversa.json", '[]', () => {
-        console.log("Json Salvo")
-    })
-
-    const retornoInicial = JSON.parse(fs.readFileSync("./src/Json/iniciarBot.json").toString());
-    const historicoPermanente = JSON.parse(fs.readFileSync("./src/Json/historicoPermanente.json").toString());
-    console.log(historicoPermanente)
-    const tamanhoHistorico = historicoPermanente.length
+iniciarBot.get("/", async (req, res) => {
+    const retornoInicial = await mensagensRepository.iniciarBot();
     res.set({
         'Content-Type' : "application/json",
         'Acess-Control-Allow-Origin' : '*'
@@ -20,7 +14,7 @@ iniciarBot.get("/",(req, res) => {
     res.status(200)
     res.json({
         status: 'Success',
-        numeroDeConversa : tamanhoHistorico,
-        mensagem: retornoInicial
+        mensagem: retornoInicial.response,
+        numeroProtocolo: retornoInicial.idProtocolo
     })
 });
